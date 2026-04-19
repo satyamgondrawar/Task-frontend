@@ -1,4 +1,4 @@
-const BASE_URL = "https://task-backend-1uvc.vercel.app/";
+const BASE_URL = "https://task-backend-1uvc.vercel.app";
 
 // GET
 export const fetchTasks = async () => {
