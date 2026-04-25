@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import DashboardStats from "../components/DashboardStats";
 import { useApp } from "../context/AppContext";
 import {
   createTask,
   deleteTaskApi,
-  fetchTasks,
   updateTask,
 } from "../api/taskApi";
 
@@ -43,14 +42,13 @@ const formatTaskDate = (value) => {
 };
 
 export default function Tasks() {
-  const { tasks, setTasks } = useApp();
+  const { tasks, setTasks, isLoading, isRefreshing, loadError, refreshData } =
+    useApp();
   const [text, setText] = useState("");
   const [date, setDate] = useState("");
   const [selectedTaskIds, setSelectedTaskIds] = useState([]);
-
-  useEffect(() => {
-    fetchTasks().then((taskData) => setTasks(sortTasksByDate(taskData)));
-  }, [setTasks]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [actionError, setActionError] = useState("");
 
   const sortedTasks = useMemo(() => sortTasksByDate(tasks), [tasks]);
 
@@ -68,20 +66,38 @@ export default function Tasks() {
       date: date || null,
     };
 
-    const saved = await createTask(newTask);
-    setTasks((previous) => sortTasksByDate([...previous, saved]));
-    setText("");
-    setDate("");
+    setIsSaving(true);
+    setActionError("");
+
+    try {
+      const saved = await createTask(newTask);
+      setTasks((previous) => sortTasksByDate([...previous, saved]));
+      setText("");
+      setDate("");
+    } catch {
+      setActionError("Unable to add the task right now.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const toggleTask = async (task) => {
     const updated = { ...task, completed: !task.completed };
-    await updateTask(task.id, updated);
-    setTasks((previous) =>
+    const previousTasks = tasks;
+
+    setActionError("");
+    setTasks((current) =>
       sortTasksByDate(
-        previous.map((item) => (item.id === task.id ? updated : item))
+        current.map((item) => (item.id === task.id ? updated : item))
       )
     );
+
+    try {
+      await updateTask(task.id, updated);
+    } catch {
+      setTasks(previousTasks);
+      setActionError("Unable to update the task right now.");
+    }
   };
 
   const toggleTaskSelection = (taskId) => {
@@ -102,19 +118,41 @@ export default function Tasks() {
   };
 
   const deleteTask = async (id) => {
-    await deleteTaskApi(id);
-    setTasks((previous) => previous.filter((task) => task.id !== id));
-    setSelectedTaskIds((previous) => previous.filter((taskId) => taskId !== id));
+    const previousTasks = tasks;
+    const previousSelection = selectedTaskIds;
+
+    setActionError("");
+    setTasks((current) => current.filter((task) => task.id !== id));
+    setSelectedTaskIds((current) => current.filter((taskId) => taskId !== id));
+
+    try {
+      await deleteTaskApi(id);
+    } catch {
+      setTasks(previousTasks);
+      setSelectedTaskIds(previousSelection);
+      setActionError("Unable to delete the task right now.");
+    }
   };
 
   const deleteSelectedTasks = async () => {
     if (selectedTaskIds.length === 0) return;
 
-    await Promise.all(selectedTaskIds.map((id) => deleteTaskApi(id)));
-    setTasks((previous) =>
-      previous.filter((task) => !selectedTaskIds.includes(task.id))
+    const idsToDelete = [...selectedTaskIds];
+    const previousTasks = tasks;
+
+    setActionError("");
+    setTasks((current) =>
+      current.filter((task) => !idsToDelete.includes(task.id))
     );
     setSelectedTaskIds([]);
+
+    try {
+      await Promise.all(idsToDelete.map((id) => deleteTaskApi(id)));
+    } catch {
+      setTasks(previousTasks);
+      setSelectedTaskIds(idsToDelete);
+      setActionError("Unable to delete the selected tasks right now.");
+    }
   };
 
   return (
@@ -135,15 +173,38 @@ export default function Tasks() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={deleteSelectedTasks}
-            disabled={selectedTaskIds.length === 0}
-            className="rounded-2xl bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Delete Selected ({selectedTaskIds.length})
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => refreshData()}
+              disabled={isLoading || isRefreshing}
+              className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isRefreshing ? "Refreshing..." : "Refresh"}
+            </button>
+
+            <button
+              type="button"
+              onClick={deleteSelectedTasks}
+              disabled={selectedTaskIds.length === 0}
+              className="rounded-2xl bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Delete Selected ({selectedTaskIds.length})
+            </button>
+          </div>
         </div>
+
+        {(loadError || actionError) && (
+          <div className="mb-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {actionError || loadError}
+          </div>
+        )}
+
+        {isLoading && (
+          <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+            Loading your latest tasks...
+          </div>
+        )}
 
         <div className="mb-6 flex flex-col gap-3 rounded-2xl bg-slate-50 p-4 sm:flex-row">
           <input
@@ -163,9 +224,10 @@ export default function Tasks() {
 
           <button
             onClick={addTask}
+            disabled={isSaving}
             className="rounded-xl bg-blue-500 px-5 py-3 font-semibold text-white transition hover:bg-blue-600"
           >
-            Add
+            {isSaving ? "Saving..." : "Add"}
           </button>
         </div>
 
