@@ -8,48 +8,77 @@ const defaultOptions = {
   },
 };
 
+function createReminderApiError(message, code = "REQUEST_FAILED") {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
+
+async function requestReminder(path = "", options = {}) {
+  const res = await fetch(`${BASE_URL}/reminders${path}`, {
+    ...defaultOptions,
+    ...options,
+    headers: {
+      ...defaultOptions.headers,
+      ...(options.headers ?? {}),
+    },
+  });
+
+  if (res.status === 404) {
+    throw createReminderApiError(
+      "Reminders backend is not deployed yet. Redeploy the backend first.",
+      "REMINDERS_API_MISSING"
+    );
+  }
+
+  if (!res.ok) {
+    throw createReminderApiError("Reminder request failed.");
+  }
+
+  return res;
+}
+
 export const fetchReminders = async () => {
-  const res = await fetch(`${BASE_URL}/reminders`, defaultOptions);
-  if (!res.ok) throw new Error("Failed to fetch reminders");
-  return res.json();
+  try {
+    const res = await requestReminder();
+    return res.json();
+  } catch (error) {
+    if (error.code === "REMINDERS_API_MISSING") {
+      return [];
+    }
+
+    throw error;
+  }
 };
 
 export const createReminder = async (reminder) => {
-  const res = await fetch(`${BASE_URL}/reminders`, {
-    ...defaultOptions,
+  const res = await requestReminder("", {
     method: "POST",
     headers: {
-      ...defaultOptions.headers,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(reminder),
   });
 
-  if (!res.ok) throw new Error("Failed to create reminder");
   return res.json();
 };
 
 export const updateReminder = async (id, reminder) => {
-  const res = await fetch(`${BASE_URL}/reminders/${id}`, {
-    ...defaultOptions,
+  const res = await requestReminder(`/${id}`, {
     method: "PUT",
     headers: {
-      ...defaultOptions.headers,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(reminder),
   });
 
-  if (!res.ok) throw new Error("Failed to update reminder");
   return res.json();
 };
 
 export const deleteReminderApi = async (id) => {
-  const res = await fetch(`${BASE_URL}/reminders/${id}`, {
-    ...defaultOptions,
+  const res = await requestReminder(`/${id}`, {
     method: "DELETE",
   });
 
-  if (!res.ok) throw new Error("Failed to delete reminder");
   return res.json();
 };

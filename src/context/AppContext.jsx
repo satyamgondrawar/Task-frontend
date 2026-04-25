@@ -48,6 +48,8 @@ export function AppProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [remindersAvailable, setRemindersAvailable] = useState(true);
+  const [remindersError, setRemindersError] = useState("");
   const [notificationPermission, setNotificationPermission] = useState(() =>
     typeof Notification === "undefined" ? "unsupported" : Notification.permission
   );
@@ -68,15 +70,37 @@ export function AppProvider({ children }) {
     }
 
     try {
-      const [taskData, planData, reminderData] = await Promise.all([
+      const [taskResult, planResult, reminderResult] = await Promise.allSettled([
         fetchTasks(),
         fetchPlans(),
         fetchReminders(),
       ]);
 
-      setTasks(Array.isArray(taskData) ? taskData : []);
-      setPlans(Array.isArray(planData) ? planData : []);
-      setReminders(Array.isArray(reminderData) ? reminderData : []);
+      if (taskResult.status === "rejected") {
+        throw taskResult.reason;
+      }
+
+      if (planResult.status === "rejected") {
+        throw planResult.reason;
+      }
+
+      setTasks(Array.isArray(taskResult.value) ? taskResult.value : []);
+      setPlans(Array.isArray(planResult.value) ? planResult.value : []);
+
+      if (reminderResult.status === "fulfilled") {
+        setReminders(Array.isArray(reminderResult.value) ? reminderResult.value : []);
+        setRemindersAvailable(true);
+        setRemindersError("");
+      } else if (reminderResult.reason?.code === "REMINDERS_API_MISSING") {
+        setReminders([]);
+        setRemindersAvailable(false);
+        setRemindersError(reminderResult.reason.message);
+      } else {
+        setReminders([]);
+        setRemindersAvailable(true);
+        setRemindersError("Unable to refresh reminders right now.");
+      }
+
       setLoadError("");
       hasLoadedOnceRef.current = true;
     } catch (error) {
@@ -188,6 +212,8 @@ export function AppProvider({ children }) {
         isLoading,
         isRefreshing,
         loadError,
+        remindersAvailable,
+        remindersError,
         notificationPermission,
         requestNotificationPermission,
         clearReminderNotification,

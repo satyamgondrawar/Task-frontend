@@ -79,6 +79,8 @@ export default function Reminders() {
     isLoading,
     isRefreshing,
     loadError,
+    remindersAvailable,
+    remindersError,
     refreshData,
     notificationPermission,
     requestNotificationPermission,
@@ -117,8 +119,8 @@ export default function Reminders() {
       setTitle("");
       setNotes("");
       setDueAt("");
-    } catch {
-      setActionError("Unable to add the reminder right now.");
+    } catch (error) {
+      setActionError(error.message || "Unable to add the reminder right now.");
     } finally {
       setIsSaving(false);
     }
@@ -146,9 +148,9 @@ export default function Reminders() {
 
     try {
       await updateReminder(reminder.id, updatedReminder);
-    } catch {
+    } catch (error) {
       setReminders(previousReminders);
-      setActionError("Unable to update the reminder right now.");
+      setActionError(error.message || "Unable to update the reminder right now.");
     }
   };
 
@@ -161,9 +163,9 @@ export default function Reminders() {
 
     try {
       await deleteReminderApi(id);
-    } catch {
+    } catch (error) {
       setReminders(previousReminders);
-      setActionError("Unable to delete the reminder right now.");
+      setActionError(error.message || "Unable to delete the reminder right now.");
     }
   };
 
@@ -220,9 +222,9 @@ export default function Reminders() {
           </div>
         </div>
 
-        {(loadError || actionError) && (
+        {(loadError || remindersError || actionError) && (
           <div className="mb-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {actionError || loadError}
+            {actionError || remindersError || loadError}
           </div>
         )}
 
@@ -238,6 +240,7 @@ export default function Reminders() {
             placeholder="Reminder title"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
+            disabled={!remindersAvailable}
             className="rounded-xl border border-slate-200 p-3 outline-none transition focus:border-blue-400"
           />
 
@@ -246,6 +249,7 @@ export default function Reminders() {
             placeholder="Optional note"
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
+            disabled={!remindersAvailable}
             className="rounded-xl border border-slate-200 p-3 outline-none transition focus:border-blue-400"
           />
 
@@ -253,18 +257,25 @@ export default function Reminders() {
             type="datetime-local"
             value={dueAt}
             onChange={(event) => setDueAt(event.target.value)}
+            disabled={!remindersAvailable}
             className="rounded-xl border border-slate-200 p-3 outline-none transition focus:border-blue-400"
           />
 
           <button
             type="button"
             onClick={addReminder}
-            disabled={isSaving}
+            disabled={isSaving || !remindersAvailable}
             className="rounded-xl bg-blue-500 px-5 py-3 font-semibold text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSaving ? "Saving..." : "Add"}
           </button>
         </div>
+
+        {!remindersAvailable && (
+          <div className="mb-4 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Reminders UI is ready, but the live backend still needs redeploying to add `/reminders` endpoints.
+          </div>
+        )}
 
         <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
           <AlarmClock size={16} />
