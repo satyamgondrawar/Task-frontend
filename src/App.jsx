@@ -5,6 +5,7 @@ import Layout from "./components/Layout";
 import Tasks from "./pages/Tasks";
 import Analytics from "./pages/Analytics";
 import Chat from "./pages/Chat";
+import Reminders from "./pages/Reminders";
 import Settings from "./pages/Settings";
 
 
@@ -17,6 +18,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="plans" element={<Plans />} />
           <Route path="tasks" element={<Tasks />} />
+          <Route path="reminders" element={<Reminders />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="chat" element={<Chat />} />
           <Route path="settings" element={<Settings />} />

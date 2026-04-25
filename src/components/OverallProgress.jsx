@@ -3,8 +3,8 @@ import { useApp } from "../context/AppContext";
 import { getOverviewStats } from "../utils/analytics";
 
 export default function OverallProgress() {
-  const { tasks, plans } = useApp();
-  const { completed, pending, completionRate } = getOverviewStats(tasks, plans);
+  const { tasks, plans, reminders } = useApp();
+  const { completed, pending, completionRate } = getOverviewStats(tasks, plans, reminders);
   const data = [
     {
       name: "Progress",

@@ -9,6 +9,7 @@ const titles = {
   "/dashboard": "Dashboard",
   "/tasks": "Tasks",
   "/plans": "Plans",
+  "/reminders": "Reminders",
   "/analytics": "Analytics",
   "/chat": "Chatbot",
   "/settings": "Settings",

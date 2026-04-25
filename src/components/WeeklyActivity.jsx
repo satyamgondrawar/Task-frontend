@@ -12,8 +12,8 @@ import { useApp } from "../context/AppContext";
 import { getWeeklyActivity } from "../utils/analytics";
 
 export default function WeeklyChart() {
-  const { tasks, plans, isLoading } = useApp();
-  const data = getWeeklyActivity(tasks, plans);
+  const { tasks, plans, reminders, isLoading } = useApp();
+  const data = getWeeklyActivity(tasks, plans, reminders);
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-md">
@@ -37,6 +37,7 @@ export default function WeeklyChart() {
             <Legend />
             <Bar dataKey="tasks" name="Tasks" fill="#2563eb" radius={[10, 10, 0, 0]} />
             <Bar dataKey="plans" name="Plans" fill="#0f766e" radius={[10, 10, 0, 0]} />
+            <Bar dataKey="reminders" name="Reminders" fill="#f97316" radius={[10, 10, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

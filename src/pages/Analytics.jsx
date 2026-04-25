@@ -27,15 +27,15 @@ const priorityColors = {
 };
 
 export default function Analytics() {
-  const { tasks, plans, isLoading } = useApp();
-  const overview = getOverviewStats(tasks, plans);
+  const { tasks, plans, reminders, isLoading } = useApp();
+  const overview = getOverviewStats(tasks, plans, reminders);
   const priorityData = getPriorityBreakdown(plans).filter((item) => item.value > 0);
-  const recentItems = getRecentItems(tasks, plans);
+  const recentItems = getRecentItems(tasks, plans, reminders);
   const cards = [
     {
       title: "Tracked Items",
       value: overview.total,
-      subtitle: `${overview.taskCount} tasks and ${overview.planCount} plans`,
+      subtitle: `${overview.taskCount} tasks, ${overview.planCount} plans, ${overview.reminderCount} reminders`,
       icon: ClipboardList,
       accent: "bg-blue-50 text-blue-700",
     },

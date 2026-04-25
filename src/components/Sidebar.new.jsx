@@ -55,15 +55,15 @@ export default function Sidebar({ isOpen, onClose }) {
           </div>
 
           <nav className="space-y-2">
-            {navItems.map(({ to, label, icon: Icon }) => {
+            {navItems.map((item) => {
               const isActive =
-                location.pathname === to ||
-                (to === "/dashboard" && location.pathname === "/");
+                location.pathname === item.to ||
+                (item.to === "/dashboard" && location.pathname === "/");
 
               return (
                 <Link
-                  key={to}
-                  to={to}
+                  key={item.to}
+                  to={item.to}
                   onClick={onClose}
                   className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
                     isActive
@@ -71,8 +71,8 @@ export default function Sidebar({ isOpen, onClose }) {
                       : "text-slate-300 hover:bg-white/8 hover:text-white"
                   }`}
                 >
-                  <Icon size={18} />
-                  {label}
+                  <item.icon size={18} />
+                  {item.label}
                 </Link>
               );
             })}

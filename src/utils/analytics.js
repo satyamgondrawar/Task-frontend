@@ -15,8 +15,8 @@ function startOfDay(date) {
   return normalized;
 }
 
-export function getOverviewStats(tasks = [], plans = []) {
-  const allItems = [...tasks, ...plans];
+export function getOverviewStats(tasks = [], plans = [], reminders = []) {
+  const allItems = [...tasks, ...plans, ...reminders];
   const total = allItems.length;
   const completed = allItems.filter((item) => item.completed).length;
   const pending = total - completed;
@@ -29,14 +29,16 @@ export function getOverviewStats(tasks = [], plans = []) {
     completionRate,
     taskCount: tasks.length,
     planCount: plans.length,
+    reminderCount: reminders.length,
   };
 }
 
-export function getWeeklyActivity(tasks = [], plans = []) {
+export function getWeeklyActivity(tasks = [], plans = [], reminders = []) {
   const formatter = new Intl.DateTimeFormat("en-US", { weekday: "short" });
   const items = [
     ...tasks.map((task) => ({ ...task, itemType: "Task" })),
     ...plans.map((plan) => ({ ...plan, itemType: "Plan" })),
+    ...reminders.map((reminder) => ({ ...reminder, itemType: "Reminder" })),
   ];
   const today = startOfDay(new Date());
 
@@ -53,6 +55,7 @@ export function getWeeklyActivity(tasks = [], plans = []) {
       day: formatter.format(date),
       tasks: dayItems.filter((item) => item.itemType === "Task").length,
       plans: dayItems.filter((item) => item.itemType === "Plan").length,
+      reminders: dayItems.filter((item) => item.itemType === "Reminder").length,
     };
   });
 }
@@ -64,13 +67,13 @@ export function getPriorityBreakdown(plans = []) {
   }));
 }
 
-export function getRecentItems(tasks = [], plans = []) {
-  return [...tasks, ...plans]
+export function getRecentItems(tasks = [], plans = [], reminders = []) {
+  return [...tasks, ...plans, ...reminders]
     .map((item) => ({
       id: item.id,
       label: item.text ?? item.title ?? "Untitled item",
       completed: Boolean(item.completed),
-      type: item.text ? "Task" : "Plan",
+      type: item.dueAt ? "Reminder" : item.text ? "Task" : "Plan",
       createdAt: item.createdAt,
       priority: item.priority ?? null,
     }))
